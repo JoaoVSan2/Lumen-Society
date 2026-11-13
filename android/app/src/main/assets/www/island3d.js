@@ -1,9 +1,8 @@
-
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 
 // ======================================================
-// LUMEN SOCIETY — ISLAND CORE 0.2
-// Mundo natural 3D: sem personagens e sem construções.
+// LUMEN SOCIETY — ISLAND CORE 0.3
+// Ilha natural Low Poly: sem personagens e sem construções.
 // ======================================================
 
 const host = document.getElementById('island-canvas');
@@ -12,9 +11,7 @@ if (!host) {
   throw new Error('Elemento #island-canvas não encontrado.');
 }
 
-// ------------------------------------------------------
 // CENA E CÂMERA
-// ------------------------------------------------------
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#b9d9d2');
@@ -25,9 +22,6 @@ const focus = new THREE.Vector3(0, 0.2, 0);
 const camera = new THREE.OrthographicCamera(
   -10, 10, 7, -7, 0.1, 100
 );
-
-camera.position.set(13, 16, 13);
-camera.lookAt(focus);
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
@@ -42,11 +36,16 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 
 host.innerHTML = '';
+host.style.position = 'relative';
+host.style.overflow = 'hidden';
 host.appendChild(renderer.domElement);
 
-// ------------------------------------------------------
+renderer.domElement.style.display = 'block';
+renderer.domElement.style.width = '100%';
+renderer.domElement.style.height = '100%';
+renderer.domElement.style.touchAction = 'none';
+
 // ILUMINAÇÃO
-// ------------------------------------------------------
 
 scene.add(
   new THREE.HemisphereLight('#e8f5e9', '#647b65', 2.2)
@@ -63,9 +62,7 @@ sunlight.shadow.camera.bottom = -12;
 sunlight.shadow.bias = -0.0003;
 scene.add(sunlight);
 
-// ------------------------------------------------------
 // MATERIAIS
-// ------------------------------------------------------
 
 function material(color, roughness = 1) {
   return new THREE.MeshStandardMaterial({
@@ -103,20 +100,19 @@ const flowerMaterials = [
   material('#d8a8d1')
 ];
 
-// ------------------------------------------------------
 // OCEANO
-// ------------------------------------------------------
+
+const SEA_LEVEL = -0.08;
 
 const oceanGeometry = new THREE.PlaneGeometry(150, 150, 40, 40);
 const ocean = new THREE.Mesh(oceanGeometry, waterMaterial);
 
 ocean.rotation.x = -Math.PI / 2;
-ocean.position.y = -0.48;
+ocean.position.y = SEA_LEVEL;
 ocean.receiveShadow = true;
-
 scene.add(ocean);
 
-// Pequenas ondulações decorativas.
+// Ondulações decorativas próximas à costa.
 
 const waves = [];
 
@@ -136,13 +132,12 @@ for (let i = 0; i < 18; i++) {
   );
 
   const angle = i * 2.4;
-  const radius = 6.6 + (i % 4) * 0.35;
+  const radius = 6.25 + (i % 4) * 0.35;
 
   wave.rotation.x = -Math.PI / 2;
-
   wave.position.set(
     Math.cos(angle) * radius,
-    -0.46,
+    SEA_LEVEL + 0.015,
     Math.sin(angle) * radius
   );
 
@@ -150,9 +145,7 @@ for (let i = 0; i < 18; i++) {
   waves.push(wave);
 }
 
-// ------------------------------------------------------
 // TERRENO ORGÂNICO
-// ------------------------------------------------------
 
 const island = new THREE.Group();
 scene.add(island);
@@ -186,7 +179,7 @@ function terrainHeight(x, z) {
   return 0.42 + hill1 + hill2 + hill3;
 }
 
-// Topo da ilha com elevações suaves.
+// Malha superior do terreno.
 
 const topVertices = [];
 const topIndices = [];
@@ -203,21 +196,19 @@ for (let ring = 1; ring <= RINGS; ring++) {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
 
-    topVertices.push(
-      x,
-      terrainHeight(x, z),
-      z
-    );
+    topVertices.push(x, terrainHeight(x, z), z);
   }
 }
 
-// Triângulos do centro — orientação corrigida.
+// Triângulos do centro.
+
 for (let i = 0; i < SEGMENTS; i++) {
   const next = (i + 1) % SEGMENTS;
   topIndices.push(0, 1 + next, 1 + i);
 }
 
-// Triângulos dos anéis — orientação corrigida.
+// Triângulos dos anéis.
+
 for (let ring = 0; ring < RINGS - 1; ring++) {
   const currentStart = 1 + ring * SEGMENTS;
   const nextStart = currentStart + SEGMENTS;
@@ -235,7 +226,24 @@ for (let ring = 0; ring < RINGS - 1; ring++) {
   }
 }
 
-// Costa de areia em camadas.
+// Finalização da malha do terreno.
+
+const topGeometry = new THREE.BufferGeometry();
+
+topGeometry.setAttribute(
+  'position',
+  new THREE.Float32BufferAttribute(topVertices, 3)
+);
+
+topGeometry.setIndex(topIndices);
+topGeometry.computeVertexNormals();
+
+const terrain = new THREE.Mesh(topGeometry, grassMaterial);
+terrain.receiveShadow = true;
+terrain.castShadow = true;
+island.add(terrain);
+
+// COSTA DE AREIA
 
 function createCoast() {
   const vertices = [];
@@ -295,7 +303,7 @@ function createCoast() {
 
 createCoast();
 
-// Pequenas áreas de vegetação com tons diferentes.
+// ÁREAS DE VEGETAÇÃO
 
 function grassPatch(x, z, scale, color) {
   const patch = new THREE.Mesh(
@@ -315,9 +323,7 @@ grassPatch(1.8, -1.8, 1.1, darkGrassMaterial);
 grassPatch(2.5, 1.7, 1.0, lightGrassMaterial);
 grassPatch(-1.0, 2.8, 0.8, darkGrassMaterial);
 
-// ------------------------------------------------------
 // ÁRVORES
-// ------------------------------------------------------
 
 const vegetation = new THREE.Group();
 island.add(vegetation);
@@ -361,8 +367,6 @@ function createTree(x, z, scale = 1, variant = 0) {
   return group;
 }
 
-// Árvores distribuídas pelo terreno.
-
 const treePositions = [
   [-3.7, -2.1, 1.15],
   [-4.0, 0.2, 0.85],
@@ -383,14 +387,10 @@ const trees = [];
 for (let i = 0; i < treePositions.length; i++) {
   const [x, z, scale] = treePositions[i];
 
-  trees.push(
-    createTree(x, z, scale, i % 4)
-  );
+  trees.push(createTree(x, z, scale, i % 4));
 }
 
-// ------------------------------------------------------
 // ARBUSTOS
-// ------------------------------------------------------
 
 function createBush(x, z, scale = 1) {
   const group = new THREE.Group();
@@ -418,19 +418,21 @@ function createBush(x, z, scale = 1) {
 }
 
 const bushes = [
-  [-3.1, -0.8], [-2.6, 2.7],
-  [-1.8, -3.1], [0.2, -3.5],
-  [2.8, -1.5], [3.5, 1.5],
-  [0.8, 3.0], [-3.6, 1.2]
+  [-3.1, -0.8],
+  [-2.6, 2.7],
+  [-1.8, -3.1],
+  [0.2, -3.5],
+  [2.8, -1.5],
+  [3.5, 1.5],
+  [0.8, 3.0],
+  [-3.6, 1.2]
 ];
 
 for (const [x, z] of bushes) {
   createBush(x, z, 0.8 + Math.random() * 0.5);
 }
 
-// ------------------------------------------------------
 // PEDRAS
-// ------------------------------------------------------
 
 for (let i = 0; i < 35; i++) {
   const angle = i * 2.399;
@@ -460,9 +462,7 @@ for (let i = 0; i < 35; i++) {
   island.add(rock);
 }
 
-// ------------------------------------------------------
 // FLORES
-// ------------------------------------------------------
 
 const flowers = [];
 
@@ -496,15 +496,14 @@ for (let i = 0; i < 55; i++) {
 
   petals.position.y = 0.23;
   petals.scale.y = 0.65;
+
   flower.add(petals);
 
   vegetation.add(flower);
   flowers.push(flower);
 }
 
-// ------------------------------------------------------
 // CAMINHO NATURAL DE TERRA
-// ------------------------------------------------------
 
 const pathPoints = [
   new THREE.Vector3(-3.8, 0, 2.0),
@@ -528,15 +527,19 @@ const pathGeometry = new THREE.TubeGeometry(
 
 const pathMaterial = material('#d2b982');
 
-const path = new THREE.Mesh(pathGeometry, pathMaterial);
+const path = new THREE.Mesh(
+  pathGeometry,
+  pathMaterial
+);
+
 path.position.y = 0.05;
 path.receiveShadow = true;
+
 island.add(path);
 
-
-// ------------------------------------------------------
+// ======================================================
 // CÂMERA: ROTAÇÃO, ZOOM E CONTROLES TOUCH
-// ------------------------------------------------------
+// ======================================================
 
 let cameraAngle = Math.PI / 4;
 let cameraDistance = 19;
@@ -563,7 +566,6 @@ function updateZoom() {
   const width = Math.max(1, host.clientWidth);
   const height = Math.max(1, host.clientHeight);
   const aspect = width / height;
-
   const viewSize = cameraDistance;
 
   if (aspect < 1) {
@@ -585,6 +587,7 @@ function updateZoom() {
   }
 
   camera.updateProjectionMatrix();
+
   renderer.setSize(width, height);
 }
 
@@ -607,10 +610,10 @@ function getPinchDistance() {
   const dx = points[0].x - points[1].x;
   const dy = points[0].y - points[1].y;
 
-  return Math.sqrt(dx * dx + dy * dy);
+  return Math.hypot(dx, dy);
 }
 
-renderer.domElement.style.touchAction = 'none';
+// INTERAÇÃO COM O TOQUE
 
 renderer.domElement.addEventListener('pointerdown', event => {
   activePointers.set(event.pointerId, {
@@ -636,28 +639,29 @@ renderer.domElement.addEventListener('pointerdown', event => {
 renderer.domElement.addEventListener('pointermove', event => {
   if (!activePointers.has(event.pointerId)) return;
 
-  const previous = activePointers.get(event.pointerId);
-
   activePointers.set(event.pointerId, {
     x: event.clientX,
     y: event.clientY
   });
 
-  // Zoom com dois dedos.
+  // ZOOM COM DOIS DEDOS
+
   if (activePointers.size === 2) {
     const currentDistance = getPinchDistance();
 
     if (previousPinchDistance > 0) {
-      const difference = currentDistance - previousPinchDistance;
+      const difference =
+        currentDistance - previousPinchDistance;
 
-      changeZoom(-difference * 0.025);
+      changeZoom(-difference * 0.035);
     }
 
     previousPinchDistance = currentDistance;
     return;
   }
 
-  // Rotação com um dedo.
+  // ROTAÇÃO COM UM DEDO
+
   if (dragging && activePointers.size === 1) {
     const deltaX = event.clientX - previousPointer.x;
 
@@ -671,6 +675,8 @@ renderer.domElement.addEventListener('pointermove', event => {
 });
 
 function stopPointer(event) {
+  if (!activePointers.has(event.pointerId)) return;
+
   activePointers.delete(event.pointerId);
 
   if (activePointers.size < 2) {
@@ -682,6 +688,7 @@ function stopPointer(event) {
 
     previousPointer.x = remaining.x;
     previousPointer.y = remaining.y;
+
     dragging = true;
   } else {
     dragging = false;
@@ -690,15 +697,79 @@ function stopPointer(event) {
 
 renderer.domElement.addEventListener('pointerup', stopPointer);
 renderer.domElement.addEventListener('pointercancel', stopPointer);
+renderer.domElement.addEventListener('lostpointercapture', stopPointer);
+
+// ZOOM COM RODA DO MOUSE
 
 renderer.domElement.addEventListener('wheel', event => {
   event.preventDefault();
   changeZoom(event.deltaY * 0.025);
 }, { passive: false });
 
-// ------------------------------------------------------
+// ======================================================
+// BOTÕES DE ZOOM NA TELA
+// ======================================================
+
+const zoomControls = document.createElement('div');
+
+zoomControls.style.cssText = `
+  position: absolute;
+  right: 16px;
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 20;
+`;
+
+function createZoomButton(symbol, amount, label) {
+  const button = document.createElement('button');
+
+  button.type = 'button';
+  button.textContent = symbol;
+  button.setAttribute('aria-label', label);
+
+  button.style.cssText = `
+    width: 46px;
+    height: 46px;
+    border: 1px solid rgba(255,255,255,0.65);
+    border-radius: 14px;
+    background: rgba(35,65,58,0.82);
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  `;
+
+  button.addEventListener('pointerdown', event => {
+    event.stopPropagation();
+  });
+
+  button.addEventListener('click', event => {
+    event.stopPropagation();
+    changeZoom(amount);
+  });
+
+  return button;
+}
+
+zoomControls.appendChild(
+  createZoomButton('+', -1.5, 'Aumentar zoom')
+);
+
+zoomControls.appendChild(
+  createZoomButton('−', 1.5, 'Diminuir zoom')
+);
+
+host.appendChild(zoomControls);
+
+// ======================================================
 // REDIMENSIONAMENTO
-// ------------------------------------------------------
+// ======================================================
 
 function resize() {
   updateZoom();
@@ -706,13 +777,15 @@ function resize() {
 }
 
 const resizeObserver = new ResizeObserver(resize);
+
 resizeObserver.observe(host);
 
-resize();
+updateZoom();
+updateCamera();
 
-// ------------------------------------------------------
+// ======================================================
 // ANIMAÇÃO
-// ------------------------------------------------------
+// ======================================================
 
 const clock = new THREE.Clock();
 
@@ -722,23 +795,31 @@ function animate() {
   const elapsed = clock.getElapsedTime();
 
   // Movimento suave da água.
+
   ocean.position.y =
-    -0.48 + Math.sin(elapsed * 0.8) * 0.015;
+    SEA_LEVEL + Math.sin(elapsed * 0.8) * 0.015;
 
   // Ondulações decorativas.
+
   waves.forEach((wave, index) => {
-    const pulse = Math.sin(elapsed * 1.2 + index) * 0.025;
+    const pulse =
+      Math.sin(elapsed * 1.2 + index) * 0.025;
+
     wave.scale.setScalar(1 + pulse);
   });
 
-  // Leve movimento das copas das árvores.
+  // Movimento suave das copas.
+
   trees.forEach((tree, index) => {
-    tree.rotation.z = Math.sin(elapsed * 0.65 + index) * 0.018;
+    tree.rotation.z =
+      Math.sin(elapsed * 0.65 + index) * 0.018;
   });
 
-  // Pequena oscilação das flores.
+  // Movimento das flores.
+
   flowers.forEach((flower, index) => {
-    flower.rotation.z = Math.sin(elapsed * 1.3 + index) * 0.035;
+    flower.rotation.z =
+      Math.sin(elapsed * 1.3 + index) * 0.035;
   });
 
   renderer.render(scene, camera);
@@ -746,17 +827,18 @@ function animate() {
 
 animate();
 
-// ------------------------------------------------------
+// ======================================================
 // ESTADO DA CENA
-// ------------------------------------------------------
+// ======================================================
 
 window.lumenIsland = {
   scene,
   camera,
   renderer,
-  island
+  island,
+  changeZoom
 };
 
 window.lumenIslandReady = true;
 
-console.log('Lumen Society Island Core 0.2 carregado.');
+console.log('Lumen Society Island Core 0.3 carregado.');
