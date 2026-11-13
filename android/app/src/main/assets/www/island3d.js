@@ -2,7 +2,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 
 // ======================================================
-// LUMEN SOCIETY — ISLAND CORE 0.1
+// LUMEN SOCIETY — ISLAND CORE 0.2
 // Mundo natural 3D: sem personagens e sem construções.
 // ======================================================
 
@@ -80,6 +80,7 @@ const lightGrassMaterial = material('#a6c987');
 const darkGrassMaterial = material('#6f9e70');
 const sandMaterial = material('#e5cf9e');
 const waterMaterial = material('#70b7b2', 0.45);
+
 const rockMaterials = [
   material('#aaa995'),
   material('#c5bea6'),
@@ -110,7 +111,7 @@ const oceanGeometry = new THREE.PlaneGeometry(150, 150, 40, 40);
 const ocean = new THREE.Mesh(oceanGeometry, waterMaterial);
 
 ocean.rotation.x = -Math.PI / 2;
-ocean.position.y = -0.62;
+ocean.position.y = -0.48;
 ocean.receiveShadow = true;
 
 scene.add(ocean);
@@ -130,17 +131,18 @@ for (let i = 0; i < 18; i++) {
     new THREE.MeshBasicMaterial({
       color: '#c0e3d3',
       transparent: true,
-      opacity: 0.32
+      opacity: 0.18
     })
   );
 
   const angle = i * 2.4;
-  const radius = 7.2 + (i % 4) * 0.55;
+  const radius = 6.6 + (i % 4) * 0.35;
 
   wave.rotation.x = -Math.PI / 2;
+
   wave.position.set(
     Math.cos(angle) * radius,
-    -0.56,
+    -0.46,
     Math.sin(angle) * radius
   );
 
@@ -548,16 +550,20 @@ path.position.y = 0.05;
 path.receiveShadow = true;
 island.add(path);
 
-
 // ------------------------------------------------------
-// CÂMERA: ENQUADRAMENTO ADAPTÁVEL, ZOOM E ROTAÇÃO
+// CÂMERA: ENQUADRAMENTO, ZOOM E ROTAÇÃO
 // ------------------------------------------------------
 
 let cameraAngle = Math.PI / 4;
-let cameraDistance = 19;
+let cameraDistance = 15.5;
 
 let dragging = false;
 let previousPointer = { x: 0, y: 0 };
+
+const activePointers = new Map();
+
+let pinchStartDistance = 0;
+let pinchStartCameraDistance = cameraDistance;
 
 function updateCamera() {
   const height = cameraDistance * 0.9;
@@ -576,8 +582,6 @@ function updateZoom() {
   const height = Math.max(1, host.clientHeight);
   const aspect = width / height;
 
-  // No celular em modo retrato, prioriza a largura
-  // para que a ilha inteira apareça na tela.
   const viewSize = cameraDistance;
 
   if (aspect < 1) {
@@ -589,7 +593,6 @@ function updateZoom() {
     camera.top = verticalSize / 2;
     camera.bottom = -verticalSize / 2;
   } else {
-    // Em telas horizontais, prioriza a altura.
     camera.top = viewSize / 2;
     camera.bottom = -viewSize / 2;
 
@@ -603,57 +606,129 @@ function updateZoom() {
   renderer.setSize(width, height);
 }
 
-renderer.domElement.addEventListener('pointerdown', event => {
-  dragging = true;
+// Distância entre os dois dedos.
 
-  previousPointer.x = event.clientX;
-  previousPointer.y = event.clientY;
+function getPinchDistance() {
+  const points = [...activePointers.values()];
+
+  if (points.length < 2) return 0;
+
+  return Math.hypot(
+    points[0].x - points[1].x,
+    points[0].y - points[1].y
+  );
+}
+
+// Início do toque.
+
+renderer.domElement.addEventListener('pointerdown', event => {
+  activePointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
 
   renderer.domElement.setPointerCapture(event.pointerId);
+
+  if (activePointers.size === 2) {
+    pinchStartDistance = getPinchDistance();
+    pinchStartCameraDistance = cameraDistance;
+    dragging = false;
+  } else if (activePointers.size === 1) {
+    dragging = true;
+
+    previousPointer.x = event.clientX;
+    previousPointer.y = event.clientY;
+  }
 });
+
+// Movimento dos dedos.
 
 renderer.domElement.addEventListener('pointermove', event => {
-  if (!dragging) return;
+  if (!activePointers.has(event.pointerId)) return;
 
-  const deltaX = event.clientX - previousPointer.x;
+  activePointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
 
-  cameraAngle -= deltaX * 0.005;
+  // Dois dedos: zoom.
 
-  previousPointer.x = event.clientX;
-  previousPointer.y = event.clientY;
+  if (activePointers.size >= 2) {
+    dragging = false;
 
-  updateCamera();
+    const currentDistance = getPinchDistance();
+
+    if (pinchStartDistance > 0 && currentDistance > 0) {
+      cameraDistance = THREE.MathUtils.clamp(
+        pinchStartCameraDistance *
+          (pinchStartDistance / currentDistance),
+        10,
+        26
+      );
+
+      updateZoom();
+      updateCamera();
+    }
+
+    return;
+  }
+
+  // Um dedo: rotação.
+
+  if (dragging) {
+    const deltaX = event.clientX - previousPointer.x;
+
+    cameraAngle -= deltaX * 0.005;
+
+    previousPointer.x = event.clientX;
+    previousPointer.y = event.clientY;
+
+    updateCamera();
+  }
 });
 
-function stopDragging() {
+// Finalização do toque.
+
+function stopDragging(event) {
+  activePointers.delete(event.pointerId);
+
   dragging = false;
+
+  if (activePointers.size === 1) {
+    const remaining = [...activePointers.values()][0];
+
+    previousPointer.x = remaining.x;
+    previousPointer.y = remaining.y;
+  }
+
+  if (activePointers.size < 2) {
+    pinchStartDistance = 0;
+  }
 }
 
 renderer.domElement.addEventListener('pointerup', stopDragging);
 renderer.domElement.addEventListener('pointercancel', stopDragging);
+
+// Zoom por rodinha, para testes em computador.
 
 renderer.domElement.addEventListener('wheel', event => {
   event.preventDefault();
 
   cameraDistance = THREE.MathUtils.clamp(
     cameraDistance + event.deltaY * 0.008,
-    14,
-    30
+    10,
+    26
   );
 
   updateZoom();
   updateCamera();
 }, { passive: false });
 
-
 // ------------------------------------------------------
 // REDIMENSIONAMENTO
 // ------------------------------------------------------
 
 function resize() {
-  const width = Math.max(1, host.clientWidth);
-  const height = Math.max(1, host.clientHeight);
-
   updateZoom();
   updateCamera();
 }
@@ -675,8 +750,10 @@ function animate() {
   const elapsed = clock.getElapsedTime();
 
   // Movimento suave da água.
-  ocean.position.y = -0.62 + Math.sin(elapsed * 0.8) * 0.025;
+  ocean.position.y =
+    -0.48 + Math.sin(elapsed * 0.8) * 0.015;
 
+  // Ondulações decorativas.
   waves.forEach((wave, index) => {
     const pulse = Math.sin(elapsed * 1.2 + index) * 0.025;
     wave.scale.setScalar(1 + pulse);
@@ -710,4 +787,4 @@ window.lumenIsland = {
 
 window.lumenIslandReady = true;
 
-console.log('Lumen Society Island Core carregado.');
+console.log('Lumen Society Island Core 0.2 carregado.');
