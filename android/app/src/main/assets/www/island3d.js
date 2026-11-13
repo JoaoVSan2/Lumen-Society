@@ -211,15 +211,13 @@ for (let ring = 1; ring <= RINGS; ring++) {
   }
 }
 
-// Triângulos do centro.
-
+// Triângulos do centro — orientação corrigida.
 for (let i = 0; i < SEGMENTS; i++) {
   const next = (i + 1) % SEGMENTS;
-  topIndices.push(0, 1 + i, 1 + next);
+  topIndices.push(0, 1 + next, 1 + i);
 }
 
-// Triângulos dos anéis.
-
+// Triângulos dos anéis — orientação corrigida.
 for (let ring = 0; ring < RINGS - 1; ring++) {
   const currentStart = 1 + ring * SEGMENTS;
   const nextStart = currentStart + SEGMENTS;
@@ -232,25 +230,10 @@ for (let ring = 0; ring < RINGS - 1; ring++) {
     const c = nextStart + i;
     const d = nextStart + next;
 
-    topIndices.push(a, c, b);
-    topIndices.push(b, c, d);
+    topIndices.push(a, b, c);
+    topIndices.push(b, d, c);
   }
 }
-
-const topGeometry = new THREE.BufferGeometry();
-
-topGeometry.setAttribute(
-  'position',
-  new THREE.Float32BufferAttribute(topVertices, 3)
-);
-
-topGeometry.setIndex(topIndices);
-topGeometry.computeVertexNormals();
-
-const terrain = new THREE.Mesh(topGeometry, grassMaterial);
-terrain.receiveShadow = true;
-terrain.castShadow = true;
-island.add(terrain);
 
 // Costa de areia em camadas.
 
