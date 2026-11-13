@@ -1,0 +1,12 @@
+{
+  "name": "Lumen Society — First Light",
+  "short_name": "Lumen Society",
+  "description": "Um pequeno mundo, compartilhado com amigos.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f4ec",
+  "theme_color": "#152b2a"
+}
