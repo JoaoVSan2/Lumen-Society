@@ -548,12 +548,14 @@ path.position.y = 0.05;
 path.receiveShadow = true;
 island.add(path);
 
+
 // ------------------------------------------------------
-// CÂMERA: ZOOM E ROTAÇÃO
+// CÂMERA: ENQUADRAMENTO ADAPTÁVEL, ZOOM E ROTAÇÃO
 // ------------------------------------------------------
 
 let cameraAngle = Math.PI / 4;
-let cameraDistance = 18;
+let cameraDistance = 19;
+
 let dragging = false;
 let previousPointer = { x: 0, y: 0 };
 
@@ -570,15 +572,32 @@ function updateCamera() {
 }
 
 function updateZoom() {
-  const width = host.clientWidth;
-  const height = host.clientHeight;
-  const aspect = width / Math.max(height, 1);
-  const viewSize = cameraDistance * 0.85;
+  const width = Math.max(1, host.clientWidth);
+  const height = Math.max(1, host.clientHeight);
+  const aspect = width / height;
 
-  camera.left = -viewSize * aspect / 2;
-  camera.right = viewSize * aspect / 2;
-  camera.top = viewSize / 2;
-  camera.bottom = -viewSize / 2;
+  // No celular em modo retrato, prioriza a largura
+  // para que a ilha inteira apareça na tela.
+  const viewSize = cameraDistance;
+
+  if (aspect < 1) {
+    camera.left = -viewSize / 2;
+    camera.right = viewSize / 2;
+
+    const verticalSize = viewSize / aspect;
+
+    camera.top = verticalSize / 2;
+    camera.bottom = -verticalSize / 2;
+  } else {
+    // Em telas horizontais, prioriza a altura.
+    camera.top = viewSize / 2;
+    camera.bottom = -viewSize / 2;
+
+    const horizontalSize = viewSize * aspect;
+
+    camera.left = -horizontalSize / 2;
+    camera.right = horizontalSize / 2;
+  }
 
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
@@ -586,8 +605,10 @@ function updateZoom() {
 
 renderer.domElement.addEventListener('pointerdown', event => {
   dragging = true;
+
   previousPointer.x = event.clientX;
   previousPointer.y = event.clientY;
+
   renderer.domElement.setPointerCapture(event.pointerId);
 });
 
@@ -616,13 +637,14 @@ renderer.domElement.addEventListener('wheel', event => {
 
   cameraDistance = THREE.MathUtils.clamp(
     cameraDistance + event.deltaY * 0.008,
-    12,
-    27
+    14,
+    30
   );
 
   updateZoom();
   updateCamera();
 }, { passive: false });
+
 
 // ------------------------------------------------------
 // REDIMENSIONAMENTO
