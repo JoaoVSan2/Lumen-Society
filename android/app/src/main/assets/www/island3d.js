@@ -533,20 +533,19 @@ path.position.y = 0.05;
 path.receiveShadow = true;
 island.add(path);
 
+
 // ------------------------------------------------------
-// CÂMERA: ENQUADRAMENTO, ZOOM E ROTAÇÃO
+// CÂMERA: ROTAÇÃO, ZOOM E CONTROLES TOUCH
 // ------------------------------------------------------
 
 let cameraAngle = Math.PI / 4;
-let cameraDistance = 15.5;
+let cameraDistance = 19;
 
 let dragging = false;
 let previousPointer = { x: 0, y: 0 };
 
 const activePointers = new Map();
-
-let pinchStartDistance = 0;
-let pinchStartCameraDistance = cameraDistance;
+let previousPinchDistance = 0;
 
 function updateCamera() {
   const height = cameraDistance * 0.9;
@@ -589,20 +588,29 @@ function updateZoom() {
   renderer.setSize(width, height);
 }
 
-// Distância entre os dois dedos.
+function changeZoom(amount) {
+  cameraDistance = THREE.MathUtils.clamp(
+    cameraDistance + amount,
+    9,
+    30
+  );
+
+  updateZoom();
+  updateCamera();
+}
 
 function getPinchDistance() {
-  const points = [...activePointers.values()];
+  const points = Array.from(activePointers.values());
 
   if (points.length < 2) return 0;
 
-  return Math.hypot(
-    points[0].x - points[1].x,
-    points[0].y - points[1].y
-  );
+  const dx = points[0].x - points[1].x;
+  const dy = points[0].y - points[1].y;
+
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
-// Início do toque.
+renderer.domElement.style.touchAction = 'none';
 
 renderer.domElement.addEventListener('pointerdown', event => {
   activePointers.set(event.pointerId, {
@@ -612,53 +620,45 @@ renderer.domElement.addEventListener('pointerdown', event => {
 
   renderer.domElement.setPointerCapture(event.pointerId);
 
-  if (activePointers.size === 2) {
-    pinchStartDistance = getPinchDistance();
-    pinchStartCameraDistance = cameraDistance;
-    dragging = false;
-  } else if (activePointers.size === 1) {
+  if (activePointers.size === 1) {
     dragging = true;
 
     previousPointer.x = event.clientX;
     previousPointer.y = event.clientY;
   }
-});
 
-// Movimento dos dedos.
+  if (activePointers.size === 2) {
+    dragging = false;
+    previousPinchDistance = getPinchDistance();
+  }
+});
 
 renderer.domElement.addEventListener('pointermove', event => {
   if (!activePointers.has(event.pointerId)) return;
+
+  const previous = activePointers.get(event.pointerId);
 
   activePointers.set(event.pointerId, {
     x: event.clientX,
     y: event.clientY
   });
 
-  // Dois dedos: zoom.
-
-  if (activePointers.size >= 2) {
-    dragging = false;
-
+  // Zoom com dois dedos.
+  if (activePointers.size === 2) {
     const currentDistance = getPinchDistance();
 
-    if (pinchStartDistance > 0 && currentDistance > 0) {
-      cameraDistance = THREE.MathUtils.clamp(
-        pinchStartCameraDistance *
-          (pinchStartDistance / currentDistance),
-        10,
-        26
-      );
+    if (previousPinchDistance > 0) {
+      const difference = currentDistance - previousPinchDistance;
 
-      updateZoom();
-      updateCamera();
+      changeZoom(-difference * 0.025);
     }
 
+    previousPinchDistance = currentDistance;
     return;
   }
 
-  // Um dedo: rotação.
-
-  if (dragging) {
+  // Rotação com um dedo.
+  if (dragging && activePointers.size === 1) {
     const deltaX = event.clientX - previousPointer.x;
 
     cameraAngle -= deltaX * 0.005;
@@ -670,41 +670,30 @@ renderer.domElement.addEventListener('pointermove', event => {
   }
 });
 
-// Finalização do toque.
-
-function stopDragging(event) {
+function stopPointer(event) {
   activePointers.delete(event.pointerId);
 
-  dragging = false;
+  if (activePointers.size < 2) {
+    previousPinchDistance = 0;
+  }
 
   if (activePointers.size === 1) {
-    const remaining = [...activePointers.values()][0];
+    const remaining = Array.from(activePointers.values())[0];
 
     previousPointer.x = remaining.x;
     previousPointer.y = remaining.y;
-  }
-
-  if (activePointers.size < 2) {
-    pinchStartDistance = 0;
+    dragging = true;
+  } else {
+    dragging = false;
   }
 }
 
-renderer.domElement.addEventListener('pointerup', stopDragging);
-renderer.domElement.addEventListener('pointercancel', stopDragging);
-
-// Zoom por rodinha, para testes em computador.
+renderer.domElement.addEventListener('pointerup', stopPointer);
+renderer.domElement.addEventListener('pointercancel', stopPointer);
 
 renderer.domElement.addEventListener('wheel', event => {
   event.preventDefault();
-
-  cameraDistance = THREE.MathUtils.clamp(
-    cameraDistance + event.deltaY * 0.008,
-    10,
-    26
-  );
-
-  updateZoom();
-  updateCamera();
+  changeZoom(event.deltaY * 0.025);
 }, { passive: false });
 
 // ------------------------------------------------------
