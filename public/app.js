@@ -100,6 +100,16 @@ async function queueAction(type, messageId, extra = {}) {
 document.querySelectorAll('[data-task]').forEach(button => button.addEventListener('click', () => queueAction(button.dataset.task, 'action-message')));
 document.querySelectorAll('[data-build]').forEach(button => button.addEventListener('click', () => queueAction('build', 'build-message', { structureId: button.dataset.build })));
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(error => console.warn('PWA indisponível:', error)));
+
+// Service Worker apenas na versão web hospedada.
+// O APK Android utiliza os arquivos locais pelo WebView.
+if (
+  'serviceWorker' in navigator &&
+  location.protocol !== 'file:' &&
+  location.hostname !== 'appassets.androidplatform.net'
+) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(error => console.warn('PWA indisponível:', error));
+  });
 }
