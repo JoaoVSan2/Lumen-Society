@@ -551,6 +551,7 @@ const activePointers = new Map();
 let previousPinchDistance = 0;
 
 
+
 function updateCamera() {
   // Câmera mais elevada, com visão inclinada de cima.
   const height = cameraDistance * 1.25;
