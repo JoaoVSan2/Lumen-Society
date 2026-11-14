@@ -542,7 +542,7 @@ island.add(path);
 // ======================================================
 
 let cameraAngle = Math.PI / 4;
-let cameraDistance = 19;
+let cameraDistance = 27; 
 
 let dragging = false;
 let previousPointer = { x: 0, y: 0 };
@@ -568,35 +568,26 @@ function updateZoom() {
   const aspect = width / height;
   const viewSize = cameraDistance;
 
-  if (aspect < 1) {
-    camera.left = -viewSize / 2;
-    camera.right = viewSize / 2;
+  // Mantém o tamanho vertical como referência.
+  // Em telas retrato, ajusta a largura proporcionalmente.
+  camera.top = viewSize / 2;
+  camera.bottom = -viewSize / 2;
 
-    const verticalSize = viewSize / aspect;
+  const horizontalSize = viewSize * aspect;
 
-    camera.top = verticalSize / 2;
-    camera.bottom = -verticalSize / 2;
-  } else {
-    camera.top = viewSize / 2;
-    camera.bottom = -viewSize / 2;
-
-    const horizontalSize = viewSize * aspect;
-
-    camera.left = -horizontalSize / 2;
-    camera.right = horizontalSize / 2;
-  }
+  camera.left = -horizontalSize / 2;
+  camera.right = horizontalSize / 2;
 
   camera.updateProjectionMatrix();
-
   renderer.setSize(width, height);
 }
 
 function changeZoom(amount) {
   cameraDistance = THREE.MathUtils.clamp(
-    cameraDistance + amount,
-    9,
-    30
-  );
+  cameraDistance + amount,
+  18,
+  36
+);
 
   updateZoom();
   updateCamera();
@@ -715,10 +706,10 @@ const zoomControls = document.createElement('div');
 zoomControls.style.cssText = `
   position: absolute;
   right: 16px;
-  bottom: 22px;
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   z-index: 20;
 `;
 
