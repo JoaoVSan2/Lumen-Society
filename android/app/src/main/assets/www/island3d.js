@@ -550,8 +550,10 @@ let previousPointer = { x: 0, y: 0 };
 const activePointers = new Map();
 let previousPinchDistance = 0;
 
+
 function updateCamera() {
-  const height = cameraDistance * 0.9;
+  // Câmera mais elevada, com visão inclinada de cima.
+  const height = cameraDistance * 1.25;
 
   camera.position.set(
     Math.sin(cameraAngle) * cameraDistance,
