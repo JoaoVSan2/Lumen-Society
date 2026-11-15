@@ -478,34 +478,91 @@ for (const [x, z] of bushes) {
   createBush(x, z, 0.8 + Math.random() * 0.5);
 }
 
-// PEDRAS
 
-for (let i = 0; i < 35; i++) {
-  const angle = i * 2.399;
-  const radius = 2.8 + (i % 4) * 0.55;
+ // PEDRAS — DISTRIBUIÇÃO ORGÂNICA
 
-  const x = Math.cos(angle) * radius;
-  const z = Math.sin(angle) * radius;
+const rockFields = [
+  { x: -3.5, z: -1.7, count: 6 },
+  { x: 3.2, z: -1.5, count: 5 },
+  { x: -3.0, z: 2.6, count: 6 },
+  { x: 2.8, z: 2.8, count: 5 }
+];
+
+let rockSeed = 24681;
+
+function rockRandom() {
+  rockSeed = (rockSeed * 16807) % 2147483647;
+  return (rockSeed - 1) / 2147483646;
+}
+
+function createRock(x, z, size, variant) {
+  const geometry = variant % 2 === 0
+    ? new THREE.DodecahedronGeometry(size, 0)
+    : new THREE.IcosahedronGeometry(size, 0);
 
   const rock = new THREE.Mesh(
-    new THREE.DodecahedronGeometry(
-      0.13 + (i % 3) * 0.055,
-      0
-    ),
-    rockMaterials[i % rockMaterials.length]
+    geometry,
+    rockMaterials[variant % rockMaterials.length]
   );
 
   rock.position.set(
     x,
-    terrainHeight(x, z) + 0.08,
+    terrainHeight(x, z) + size * 0.45,
     z
   );
 
-  rock.rotation.set(i, i * 0.7, i * 0.4);
+  rock.scale.set(
+    0.8 + rockRandom() * 0.5,
+    0.65 + rockRandom() * 0.55,
+    0.8 + rockRandom() * 0.5
+  );
+
+  rock.rotation.set(
+    rockRandom() * 2,
+    rockRandom() * Math.PI * 2,
+    rockRandom() * 2
+  );
+
   rock.castShadow = true;
   rock.receiveShadow = true;
 
   island.add(rock);
+}
+
+// Pequenos agrupamentos.
+
+let rockVariant = 0;
+
+for (const field of rockFields) {
+  for (let i = 0; i < field.count; i++) {
+    const angle = rockRandom() * Math.PI * 2;
+    const distance = Math.sqrt(rockRandom()) * 0.75;
+
+    const x = field.x + Math.cos(angle) * distance;
+    const z = field.z + Math.sin(angle) * distance;
+
+    const size = 0.14 + rockRandom() * 0.16;
+
+    createRock(x, z, size, rockVariant++);
+  }
+}
+
+// Pedras isoladas em diferentes pontos.
+
+const isolatedRocks = [
+  [-4.1, 0.8],
+  [-1.0, -3.9],
+  [1.2, -3.8],
+  [4.0, 0.7],
+  [-0.7, 3.8],
+  [3.8, 2.0],
+  [-3.8, -2.8]
+];
+
+for (const [x, z] of isolatedRocks) {
+  const size = 0.16 + rockRandom() * 0.14;
+
+  createRock(x, z, size, rockVariant++);
 }
 
 // FLORES — DISTRIBUIÇÃO ORGÂNICA
