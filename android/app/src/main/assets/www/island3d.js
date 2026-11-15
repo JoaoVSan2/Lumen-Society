@@ -508,45 +508,76 @@ for (let i = 0; i < 35; i++) {
   island.add(rock);
 }
 
-// FLORES
+// FLORES — DISTRIBUIÇÃO ORGÂNICA
 
 const flowers = [];
 
-for (let i = 0; i < 55; i++) {
-  const angle = i * 2.4;
-  const radius = 1.4 + (i % 5) * 0.55;
+const flowerFields = [
+  { x: -2.8, z: -1.9, count: 15, radius: 0.85 },
+  { x: 0.2, z: -3.3, count: 13, radius: 0.75 },
+  { x: 2.8, z: 1.4, count: 15, radius: 0.8 },
+  { x: -1.7, z: 3.1, count: 13, radius: 0.75 }
+];
 
-  const x = Math.cos(angle) * radius;
-  const z = Math.sin(angle) * radius;
+// Gerador aleatório determinístico.
+let flowerSeed = 13579;
 
-  const flower = new THREE.Group();
+function flowerRandom() {
+  flowerSeed = (flowerSeed * 16807) % 2147483647;
+  return (flowerSeed - 1) / 2147483646;
+}
 
-  flower.position.set(
-    x,
-    terrainHeight(x, z),
-    z
-  );
+// Criar os pequenos campos.
 
-  const stem = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.018, 0.025, 0.2, 5),
-    leafMaterials[0]
-  );
+for (let fieldIndex = 0; fieldIndex < flowerFields.length; fieldIndex++) {
+  const field = flowerFields[fieldIndex];
 
-  stem.position.y = 0.1;
-  flower.add(stem);
+  for (let i = 0; i < field.count; i++) {
+    const angle = flowerRandom() * Math.PI * 2;
+    const distance = Math.sqrt(flowerRandom()) * field.radius;
 
-  const petals = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.09, 0),
-    flowerMaterials[i % flowerMaterials.length]
-  );
+    const x = field.x + Math.cos(angle) * distance;
+    const z = field.z + Math.sin(angle) * distance;
 
-  petals.position.y = 0.23;
-  petals.scale.y = 0.65;
+    const flower = new THREE.Group();
 
-  flower.add(petals);
+    flower.position.set(
+      x,
+      terrainHeight(x, z),
+      z
+    );
 
-  vegetation.add(flower);
-  flowers.push(flower);
+    const scale = 0.75 + flowerRandom() * 0.65;
+    flower.scale.setScalar(scale);
+
+    // Haste.
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.015, 0.023, 0.22, 5),
+      leafMaterials[0]
+    );
+
+    stem.position.y = 0.11;
+    flower.add(stem);
+
+    // Pétalas.
+    const petals = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.09, 0),
+      flowerMaterials[Math.floor(
+        flowerRandom() * flowerMaterials.length
+      )]
+    );
+
+    petals.position.y = 0.24;
+    petals.scale.set(1, 0.7, 1);
+    flower.add(petals);
+
+    // Pequena variação de posição e inclinação.
+    flower.rotation.y = flowerRandom() * Math.PI * 2;
+    flower.rotation.z = (flowerRandom() - 0.5) * 0.12;
+
+    vegetation.add(flower);
+    flowers.push(flower);
+  }
 }
 
 // CAMINHO NATURAL DE TERRA
