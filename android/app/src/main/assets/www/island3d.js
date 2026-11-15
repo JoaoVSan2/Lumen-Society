@@ -329,6 +329,95 @@ const vegetation = new THREE.Group();
 island.add(vegetation);
 
 
+ // GRAMA — TUFOS NATURAIS
+
+const grassTufts = new THREE.Group();
+vegetation.add(grassTufts);
+
+let grassSeed = 86421;
+
+function grassRandom() {
+  grassSeed = (grassSeed * 16807) % 2147483647;
+  return (grassSeed - 1) / 2147483646;
+}
+
+const grassColors = [
+  leafMaterials[0],
+  leafMaterials[1],
+  leafMaterials[2],
+  lightGrassMaterial,
+  darkGrassMaterial
+];
+
+function createGrassTuft(x, z, scale, variant) {
+  const tuft = new THREE.Group();
+
+  tuft.position.set(
+    x,
+    terrainHeight(x, z) + 0.025,
+    z
+  );
+
+  tuft.scale.setScalar(scale);
+
+  const bladeCount = 3 + (variant % 2);
+
+  for (let i = 0; i < bladeCount; i++) {
+    const angle =
+      (i / bladeCount) * Math.PI * 2 +
+      grassRandom() * 0.4;
+
+    const height = 0.16 + grassRandom() * 0.16;
+
+    const blade = new THREE.Mesh(
+      new THREE.ConeGeometry(
+        0.055 + grassRandom() * 0.025,
+        height,
+        4
+      ),
+      grassColors[
+        Math.floor(grassRandom() * grassColors.length)
+      ]
+    );
+
+    blade.position.set(
+      Math.cos(angle) * 0.07,
+      height * 0.5,
+      Math.sin(angle) * 0.07
+    );
+
+    blade.rotation.z =
+      Math.cos(angle) * 0.22;
+
+    blade.rotation.x =
+      Math.sin(angle) * 0.22;
+
+    blade.castShadow = true;
+
+    tuft.add(blade);
+  }
+
+  tuft.rotation.y = grassRandom() * Math.PI * 2;
+
+  grassTufts.add(tuft);
+}
+
+// Distribuição orgânica pelo terreno.
+
+for (let i = 0; i < 48; i++) {
+  const angle = grassRandom() * Math.PI * 2;
+
+  // Mantém os tufos afastados da borda.
+  const radius = Math.sqrt(grassRandom()) * 4.7;
+
+  const x = Math.cos(angle) * radius;
+  const z = Math.sin(angle) * radius;
+
+  const scale = 0.65 + grassRandom() * 0.8;
+
+  createGrassTuft(x, z, scale, i % 5);
+}
+
 function createTree(x, z, scale = 1, variant = 0) {
   const group = new THREE.Group();
 
