@@ -554,7 +554,7 @@ let previousPinchDistance = 0;
 
 function updateCamera() {
   // Câmera mais elevada, com visão inclinada de cima.
-  const height = cameraDistance * 1.25;
+  const height = cameraDistance * 1.05;
 
   camera.position.set(
     Math.sin(cameraAngle) * cameraDistance,
