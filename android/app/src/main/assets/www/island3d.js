@@ -328,66 +328,77 @@ grassPatch(-1.0, 2.8, 0.8, darkGrassMaterial);
 const vegetation = new THREE.Group();
 island.add(vegetation);
 
+
 function createTree(x, z, scale = 1, variant = 0) {
   const group = new THREE.Group();
 
   group.position.set(x, terrainHeight(x, z), z);
   group.scale.setScalar(scale);
 
+  // Tronco com formato levemente irregular.
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12, 0.18, 0.85, 6),
+    new THREE.CylinderGeometry(0.10, 0.19, 0.95, 6),
     trunkMaterial
   );
 
-  trunk.position.y = 0.4;
+  trunk.position.y = 0.45;
+  trunk.rotation.z = (variant % 2 === 0 ? 1 : -1) * 0.06;
   trunk.castShadow = true;
   group.add(trunk);
 
-  const crown1 = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.72, 1),
-    leafMaterials[variant % leafMaterials.length]
+  const leafColor = leafMaterials[variant % leafMaterials.length];
+
+  // Copa principal com formatos variados.
+  let crownGeometry;
+
+  if (variant % 3 === 0) {
+    crownGeometry = new THREE.IcosahedronGeometry(0.75, 1);
+  } else if (variant % 3 === 1) {
+    crownGeometry = new THREE.DodecahedronGeometry(0.72, 1);
+  } else {
+    crownGeometry = new THREE.IcosahedronGeometry(0.65, 0);
+  }
+
+  const crown = new THREE.Mesh(crownGeometry, leafColor);
+
+  crown.position.y = 1.12;
+  crown.scale.set(
+    variant % 2 === 0 ? 1.0 : 0.85,
+    variant % 3 === 1 ? 1.2 : 1.0,
+    variant % 2 === 0 ? 0.9 : 1.05
   );
 
-  crown1.position.y = 1.05;
-  crown1.scale.set(1, 1.05, 0.95);
-  crown1.castShadow = true;
-  group.add(crown1);
+  crown.castShadow = true;
+  group.add(crown);
 
-  const crown2 = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.48, 1),
-    leafMaterials[(variant + 1) % leafMaterials.length]
-  );
+  // Copas secundárias para dar volume.
+  const clusterCount = 2 + (variant % 3);
 
-  crown2.position.set(0.32, 1.42, 0.05);
-  crown2.castShadow = true;
-  group.add(crown2);
+  for (let i = 0; i < clusterCount; i++) {
+    const angle = (i / clusterCount) * Math.PI * 2;
+    const radius = 0.38;
+
+    const cluster = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(
+        0.38 + (i % 2) * 0.08,
+        1
+      ),
+      leafMaterials[(variant + i + 1) % leafMaterials.length]
+    );
+
+    cluster.position.set(
+      Math.cos(angle) * radius,
+      1.0 + (i % 2) * 0.18,
+      Math.sin(angle) * radius
+    );
+
+    cluster.castShadow = true;
+    group.add(cluster);
+  }
 
   vegetation.add(group);
 
   return group;
-}
-
-const treePositions = [
-  [-3.7, -2.1, 1.15],
-  [-4.0, 0.2, 0.85],
-  [-3.3, 2.2, 0.9],
-  [-2.0, 3.3, 0.75],
-  [-0.5, -3.8, 0.9],
-  [1.3, -3.5, 0.85],
-  [3.2, -2.5, 1.05],
-  [3.8, -0.4, 0.85],
-  [3.2, 2.3, 0.95],
-  [1.5, 3.7, 0.8],
-  [-1.5, -1.9, 0.75],
-  [1.7, 1.4, 0.7]
-];
-
-const trees = [];
-
-for (let i = 0; i < treePositions.length; i++) {
-  const [x, z, scale] = treePositions[i];
-
-  trees.push(createTree(x, z, scale, i % 4));
 }
 
 // ARBUSTOS
