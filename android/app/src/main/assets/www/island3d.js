@@ -436,24 +436,33 @@ for (let i = 0; i < treePositions.length; i++) {
   );
 }
 
-// ARBUSTOS
 
-function createBush(x, z, scale = 1) {
+ // ARBUSTOS — DISTRIBUIÇÃO ORGÂNICA
+
+function createBush(x, z, scale = 1, variant = 0) {
   const group = new THREE.Group();
 
   group.position.set(x, terrainHeight(x, z), z);
   group.scale.setScalar(scale);
 
-  for (let i = 0; i < 3; i++) {
+  const clusterCount = 3 + (variant % 2);
+
+  for (let i = 0; i < clusterCount; i++) {
+    const angle = (i / clusterCount) * Math.PI * 2;
+    const radius = 0.19 + (i % 2) * 0.07;
+
     const bush = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.27, 1),
-      leafMaterials[(i + 1) % leafMaterials.length]
+      new THREE.IcosahedronGeometry(
+        0.25 + (i % 2) * 0.06,
+        1
+      ),
+      leafMaterials[(variant + i) % leafMaterials.length]
     );
 
     bush.position.set(
-      (i - 1) * 0.22,
-      0.2 + (i % 2) * 0.1,
-      (i % 2) * 0.12
+      Math.cos(angle) * radius,
+      0.18 + (i % 2) * 0.09,
+      Math.sin(angle) * radius
     );
 
     bush.castShadow = true;
@@ -461,23 +470,43 @@ function createBush(x, z, scale = 1) {
   }
 
   vegetation.add(group);
+  return group;
 }
 
-const bushes = [
-  [-3.1, -0.8],
-  [-2.6, 2.7],
-  [-1.8, -3.1],
-  [0.2, -3.5],
-  [2.8, -1.5],
-  [3.5, 1.5],
-  [0.8, 3.0],
-  [-3.6, 1.2]
+// Pequenos campos de arbustos próximos aos bosques.
+
+const bushFields = [
+  { x: -3.4, z: -1.4, count: 4, radius: 0.55 },
+  { x: 3.25, z: -1.5, count: 4, radius: 0.55 },
+  { x: -2.8, z: 2.5, count: 4, radius: 0.55 },
+  { x: 2.8, z: 2.6, count: 4, radius: 0.55 },
+  { x: -0.5, z: -3.5, count: 3, radius: 0.4 }
 ];
 
-for (const [x, z] of bushes) {
-  createBush(x, z, 0.8 + Math.random() * 0.5);
+// Aleatoriedade determinística.
+
+let bushSeed = 97531;
+
+function bushRandom() {
+  bushSeed = (bushSeed * 16807) % 2147483647;
+  return (bushSeed - 1) / 2147483646;
 }
 
+let bushVariant = 0;
+
+for (const field of bushFields) {
+  for (let i = 0; i < field.count; i++) {
+    const angle = bushRandom() * Math.PI * 2;
+    const distance = Math.sqrt(bushRandom()) * field.radius;
+
+    const x = field.x + Math.cos(angle) * distance;
+    const z = field.z + Math.sin(angle) * distance;
+
+    const scale = 0.7 + bushRandom() * 0.45;
+
+    createBush(x, z, scale, bushVariant++);
+  }
+}
 
  // PEDRAS — DISTRIBUIÇÃO ORGÂNICA
 
