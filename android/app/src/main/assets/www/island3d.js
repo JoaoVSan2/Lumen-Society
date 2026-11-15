@@ -396,9 +396,36 @@ function createTree(x, z, scale = 1, variant = 0) {
     group.add(cluster);
   }
 
-  vegetation.add(group);
+    vegetation.add(group);
 
   return group;
+}
+
+// POSIÇÕES DAS ÁRVORES
+
+const treePositions = [
+  [-3.7, -2.1, 1.15],
+  [-4.0, 0.2, 0.85],
+  [-3.3, 2.2, 0.9],
+  [-2.0, 3.3, 0.75],
+  [-0.5, -3.8, 0.9],
+  [1.3, -3.5, 0.85],
+  [3.2, -2.5, 1.05],
+  [3.8, -0.4, 0.85],
+  [3.2, 2.3, 0.95],
+  [1.5, 3.7, 0.8],
+  [-1.5, -1.9, 0.75],
+  [1.7, 1.4, 0.7]
+];
+
+const trees = [];
+
+for (let i = 0; i < treePositions.length; i++) {
+  const [x, z, scale] = treePositions[i];
+
+  trees.push(
+    createTree(x, z, scale, i % 4)
+  );
 }
 
 // ARBUSTOS
