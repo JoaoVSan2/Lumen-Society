@@ -314,14 +314,8 @@ terrain.castShadow = true;
 
 island.add(terrain);
 
+
 // COSTA DE AREIA
-
-function createCoast() {
-function createCoast() {
-  const vertices = [];
-  const indices = [];
-  const uvs = [];
-
 
 function createCoast() {
   const vertices = [];
@@ -336,6 +330,7 @@ function createCoast() {
     { radius: 0.96, depth: 0.72 }
   ];
 
+  // Cria os vértices de cada camada.
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
     const layer = layers[layerIndex];
 
@@ -373,6 +368,7 @@ function createCoast() {
     }
   }
 
+  // Geometria da costa.
   const geometry = new THREE.BufferGeometry();
 
   geometry.setAttribute(
