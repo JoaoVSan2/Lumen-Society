@@ -317,28 +317,40 @@ island.add(terrain);
 // COSTA DE AREIA
 
 function createCoast() {
+function createCoast() {
   const vertices = [];
   const indices = [];
+  const uvs = [];
 
+  // Camadas da costa: topo, encosta e parte submersa.
   const layers = [
-    { radius: 1.00, y: 0.35 },
-    { radius: 1.04, y: 0.02 },
-    { radius: 0.98, y: -0.48 }
+    { radius: 1.005, depth: 0.025 },
+    { radius: 1.035, depth: 0.22 },
+    { radius: 1.015, depth: 0.52 },
+    { radius: 0.96, depth: 0.72 }
   ];
 
-  for (const layer of layers) {
+  for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
+    const layer = layers[layerIndex];
+
     for (let i = 0; i < SEGMENTS; i++) {
       const angle = (i / SEGMENTS) * Math.PI * 2;
       const radius = islandRadius(angle) * layer.radius;
 
-      vertices.push(
-        Math.cos(angle) * radius,
-        layer.y,
-        Math.sin(angle) * radius
-      );
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+
+      // A primeira camada acompanha o relevo da ilha.
+      const y = layerIndex === 0
+        ? terrainHeight(x, z) - layer.depth
+        : 0.35 - layer.depth;
+
+      vertices.push(x, y, z);
+      uvs.push(i / SEGMENTS, layerIndex / (layers.length - 1));
     }
   }
 
+  // Liga as camadas formando a encosta.
   for (let layer = 0; layer < layers.length - 1; layer++) {
     const start = layer * SEGMENTS;
     const nextStart = start + SEGMENTS;
@@ -363,12 +375,26 @@ function createCoast() {
     new THREE.Float32BufferAttribute(vertices, 3)
   );
 
+  geometry.setAttribute(
+    'uv',
+    new THREE.Float32BufferAttribute(uvs, 2)
+  );
+
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
 
-  const coast = new THREE.Mesh(geometry, sandMaterial);
+  const coastMaterial = new THREE.MeshStandardMaterial({
+    color: '#e5cf9e',
+    roughness: 1,
+    flatShading: true,
+    side: THREE.DoubleSide
+  });
+
+  const coast = new THREE.Mesh(geometry, coastMaterial);
+
   coast.receiveShadow = true;
   coast.castShadow = true;
+
   island.add(coast);
 }
 
