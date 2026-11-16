@@ -150,8 +150,8 @@ for (let i = 0; i < 18; i++) {
 const island = new THREE.Group();
 scene.add(island);
 
-const SEGMENTS = 64;
-const RINGS = 14;
+const SEGMENTS = 96;
+const RINGS = 20;
 const RADIUS = 6.2;
 
 function islandRadius(angle) {
@@ -245,7 +245,8 @@ topGeometry.setAttribute(
 
 topGeometry.setIndex(topIndices);
 
-// Cores-base da vegetação.
+// CORES DO TERRENO — TRANSIÇÕES SUAVES
+
 const baseGreen = new THREE.Color('#83b77d');
 const lightGreen = new THREE.Color('#a4c987');
 const darkGreen = new THREE.Color('#70966b');
@@ -253,36 +254,38 @@ const softGreen = new THREE.Color('#91b982');
 
 const terrainColors = [];
 
+function smoothMask(value, start, end) {
+  const t = THREE.MathUtils.clamp(
+    (value - start) / (end - start),
+    0,
+    1
+  );
+
+  return t * t * (3 - 2 * t);
+}
+
 for (let i = 0; i < topVertices.length; i += 3) {
   const x = topVertices[i];
   const z = topVertices[i + 2];
 
-  // Variações amplas e suaves.
-  const variation =
-    Math.sin(x * 0.75 + z * 0.35) * 0.5 +
-    Math.cos(z * 0.65 - x * 0.4) * 0.5;
+  const variation = (
+    Math.sin(x * 0.75 + z * 0.35) +
+    Math.cos(z * 0.65 - x * 0.4)
+  ) * 0.5;
 
   const secondary =
     Math.sin(x * 1.1 - z * 0.8) *
     Math.cos(z * 0.9 + x * 0.3);
 
+  const lightMask = smoothMask(variation, 0.05, 0.85);
+  const darkMask = smoothMask(-variation, 0.05, 0.85);
+  const softMask = smoothMask(secondary, 0.35, 0.9);
+
   const color = baseGreen.clone();
 
-  if (variation > 0.25) {
-    color.lerp(
-      lightGreen,
-      Math.min(0.55, (variation - 0.25) * 0.8)
-    );
-  } else if (variation < -0.25) {
-    color.lerp(
-      darkGreen,
-      Math.min(0.45, (-variation - 0.25) * 0.7)
-    );
-  }
-
-  if (secondary > 0.45) {
-    color.lerp(softGreen, 0.18);
-  }
+  color.lerp(lightGreen, lightMask * 0.22);
+  color.lerp(darkGreen, darkMask * 0.17);
+  color.lerp(softGreen, softMask * 0.08);
 
   terrainColors.push(color.r, color.g, color.b);
 }
@@ -297,7 +300,7 @@ topGeometry.computeVertexNormals();
 const terrainMaterial = new THREE.MeshStandardMaterial({
   color: '#ffffff',
   roughness: 1,
-  flatShading: true,
+  flatShading: false,
   vertexColors: true
 });
 
