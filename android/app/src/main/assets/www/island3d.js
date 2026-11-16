@@ -322,6 +322,12 @@ function createCoast() {
   const indices = [];
   const uvs = [];
 
+
+function createCoast() {
+  const vertices = [];
+  const indices = [];
+  const uvs = [];
+
   // Camadas da costa: topo, encosta e parte submersa.
   const layers = [
     { radius: 1.005, depth: 0.025 },
@@ -340,7 +346,6 @@ function createCoast() {
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
 
-      // A primeira camada acompanha o relevo da ilha.
       const y = layerIndex === 0
         ? terrainHeight(x, z) - layer.depth
         : 0.35 - layer.depth;
