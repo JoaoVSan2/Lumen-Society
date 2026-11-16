@@ -314,43 +314,56 @@ terrain.castShadow = true;
 
 island.add(terrain);
 
-
-// COSTA DE AREIA
+// COSTA DE AREIA — ISLAND CORE 0.6.0
 
 function createCoast() {
   const vertices = [];
   const indices = [];
   const uvs = [];
 
-  // Camadas da costa: topo, encosta e parte submersa.
+  // Faixas da praia: interior até a parte submersa.
   const layers = [
-    { radius: 1.005, depth: 0.025 },
-    { radius: 1.035, depth: 0.22 },
-    { radius: 1.015, depth: 0.52 },
-    { radius: 0.96, depth: 0.72 }
+    { radius: 0.998, blend: 0.00 },
+    { radius: 1.025, blend: 0.22 },
+    { radius: 1.065, blend: 0.68 },
+    { radius: 1.095, blend: 1.00 }
   ];
 
-  // Cria os vértices de cada camada.
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
     const layer = layers[layerIndex];
 
     for (let i = 0; i < SEGMENTS; i++) {
       const angle = (i / SEGMENTS) * Math.PI * 2;
-      const radius = islandRadius(angle) * layer.radius;
+
+      const baseRadius = islandRadius(angle);
+      const radius = baseRadius * layer.radius;
 
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
 
-      const y = layerIndex === 0
-        ? terrainHeight(x, z) - layer.depth
-        : 0.35 - layer.depth;
+      // Altura original da borda do terreno.
+      const edgeX = Math.cos(angle) * baseRadius;
+      const edgeZ = Math.sin(angle) * baseRadius;
+      const edgeHeight = terrainHeight(edgeX, edgeZ);
+
+      // Descida gradual da areia em direção ao oceano.
+      const beachFloor = SEA_LEVEL - 0.22;
+
+      const y = THREE.MathUtils.lerp(
+        edgeHeight - 0.015,
+        beachFloor,
+        layer.blend
+      );
 
       vertices.push(x, y, z);
-      uvs.push(i / SEGMENTS, layerIndex / (layers.length - 1));
+      uvs.push(
+        i / SEGMENTS,
+        layerIndex / (layers.length - 1)
+      );
     }
   }
 
-  // Liga as camadas formando a encosta.
+  // Conecta as faixas da praia.
   for (let layer = 0; layer < layers.length - 1; layer++) {
     const start = layer * SEGMENTS;
     const nextStart = start + SEGMENTS;
@@ -368,7 +381,6 @@ function createCoast() {
     }
   }
 
-  // Geometria da costa.
   const geometry = new THREE.BufferGeometry();
 
   geometry.setAttribute(
