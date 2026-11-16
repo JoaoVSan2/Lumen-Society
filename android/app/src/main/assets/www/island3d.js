@@ -234,7 +234,7 @@ for (let ring = 0; ring < RINGS - 1; ring++) {
   }
 }
 
-// Finalização da malha do terreno.
+// FINALIZAÇÃO DO TERRENO — CORES ORGÂNICAS
 
 const topGeometry = new THREE.BufferGeometry();
 
@@ -244,11 +244,71 @@ topGeometry.setAttribute(
 );
 
 topGeometry.setIndex(topIndices);
+
+// Cores-base da vegetação.
+const baseGreen = new THREE.Color('#83b77d');
+const lightGreen = new THREE.Color('#a4c987');
+const darkGreen = new THREE.Color('#70966b');
+const softGreen = new THREE.Color('#91b982');
+
+const terrainColors = [];
+
+for (let i = 0; i < topVertices.length; i += 3) {
+  const x = topVertices[i];
+  const z = topVertices[i + 2];
+
+  // Variações amplas e suaves.
+  const variation =
+    Math.sin(x * 0.75 + z * 0.35) * 0.5 +
+    Math.cos(z * 0.65 - x * 0.4) * 0.5;
+
+  const secondary =
+    Math.sin(x * 1.1 - z * 0.8) *
+    Math.cos(z * 0.9 + x * 0.3);
+
+  const color = baseGreen.clone();
+
+  if (variation > 0.25) {
+    color.lerp(
+      lightGreen,
+      Math.min(0.55, (variation - 0.25) * 0.8)
+    );
+  } else if (variation < -0.25) {
+    color.lerp(
+      darkGreen,
+      Math.min(0.45, (-variation - 0.25) * 0.7)
+    );
+  }
+
+  if (secondary > 0.45) {
+    color.lerp(softGreen, 0.18);
+  }
+
+  terrainColors.push(color.r, color.g, color.b);
+}
+
+topGeometry.setAttribute(
+  'color',
+  new THREE.Float32BufferAttribute(terrainColors, 3)
+);
+
 topGeometry.computeVertexNormals();
 
-const terrain = new THREE.Mesh(topGeometry, grassMaterial);
+const terrainMaterial = new THREE.MeshStandardMaterial({
+  color: '#ffffff',
+  roughness: 1,
+  flatShading: true,
+  vertexColors: true
+});
+
+const terrain = new THREE.Mesh(
+  topGeometry,
+  terrainMaterial
+);
+
 terrain.receiveShadow = true;
 terrain.castShadow = true;
+
 island.add(terrain);
 
 // COSTA DE AREIA
