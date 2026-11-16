@@ -164,6 +164,7 @@ function islandRadius(angle) {
 }
 
 function terrainHeight(x, z) {
+  // Elevações principais.
   const hill1 = Math.exp(
     -((x + 1.8) ** 2 + (z + 1.5) ** 2) / 5
   ) * 0.85;
@@ -176,8 +177,15 @@ function terrainHeight(x, z) {
     -((x + 0.3) ** 2 + (z - 3.0) ** 2) / 3
   ) * 0.3;
 
-  return 0.42 + hill1 + hill2 + hill3;
+  // Pequenas ondulações naturais.
+  const variation =
+    Math.sin(x * 1.4 + z * 0.7) * 0.055 +
+    Math.cos(z * 1.7 - x * 0.5) * 0.045 +
+    Math.sin((x + z) * 2.1) * 0.025;
+
+  return 0.42 + hill1 + hill2 + hill3 + variation;
 }
+
 
 // Malha superior do terreno.
 
