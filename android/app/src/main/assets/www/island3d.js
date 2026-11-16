@@ -418,6 +418,105 @@ for (let i = 0; i < 48; i++) {
   createGrassTuft(x, z, scale, i % 5);
 }
 
+// ======================================================
+// DETALHES NATURAIS — PEDRINHAS E PLANTAS RASTEIRAS
+// ======================================================
+
+let detailSeed = 48271;
+
+function detailRandom() {
+  detailSeed = (detailSeed * 16807) % 2147483647;
+  return (detailSeed - 1) / 2147483646;
+}
+
+// PEDRINHAS PEQUENAS
+
+for (let i = 0; i < 26; i++) {
+  const angle = detailRandom() * Math.PI * 2;
+  const radius = 1.2 + detailRandom() * 3.4;
+
+  const x = Math.cos(angle) * radius;
+  const z = Math.sin(angle) * radius;
+
+  const size = 0.045 + detailRandom() * 0.065;
+
+  const pebble = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(size, 0),
+    rockMaterials[Math.floor(detailRandom() * rockMaterials.length)]
+  );
+
+  pebble.position.set(
+    x,
+    terrainHeight(x, z) + size * 0.35,
+    z
+  );
+
+  pebble.rotation.set(
+    detailRandom() * 2,
+    detailRandom() * Math.PI * 2,
+    detailRandom() * 2
+  );
+
+  pebble.scale.set(
+    1 + detailRandom() * 0.5,
+    0.7 + detailRandom() * 0.4,
+    0.8 + detailRandom() * 0.5
+  );
+
+  pebble.castShadow = true;
+  island.add(pebble);
+}
+
+// PLANTAS RASTEIRAS
+
+for (let i = 0; i < 20; i++) {
+  const angle = detailRandom() * Math.PI * 2;
+  const radius = 1.0 + detailRandom() * 3.5;
+
+  const x = Math.cos(angle) * radius;
+  const z = Math.sin(angle) * radius;
+
+  const plant = new THREE.Group();
+
+  plant.position.set(
+    x,
+    terrainHeight(x, z) + 0.025,
+    z
+  );
+
+  plant.rotation.y = detailRandom() * Math.PI * 2;
+
+  const leafCount = 3 + Math.floor(detailRandom() * 3);
+
+  for (let j = 0; j < leafCount; j++) {
+    const leaf = new THREE.Mesh(
+      new THREE.ConeGeometry(
+        0.045 + detailRandom() * 0.025,
+        0.14 + detailRandom() * 0.10,
+        4
+      ),
+      leafMaterials[Math.floor(detailRandom() * leafMaterials.length)]
+    );
+
+    const leafAngle = (j / leafCount) * Math.PI * 2;
+
+    leaf.position.set(
+      Math.cos(leafAngle) * 0.07,
+      0.07,
+      Math.sin(leafAngle) * 0.07
+    );
+
+    leaf.rotation.z = Math.cos(leafAngle) * 0.45;
+    leaf.rotation.x = Math.sin(leafAngle) * 0.45;
+
+    plant.add(leaf);
+  }
+
+  plant.scale.setScalar(0.7 + detailRandom() * 0.6);
+
+  vegetation.add(plant);
+}
+
 function createTree(x, z, scale = 1, variant = 0) {
   const group = new THREE.Group();
 
